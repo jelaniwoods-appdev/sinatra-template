@@ -84,16 +84,15 @@ COPY --chown=student:student Gemfile.lock /rails-template/Gemfile.lock
 RUN /bin/bash -l -c "bundle install"
 
 # Install Google Chrome
+# Install Chromedriver (compatable with Google Chrome version)
+#   See https://gerg.dev/2021/06/making-chromedriver-and-chrome-versions-match-in-a-docker-image/
 RUN sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | \
     tee -a /etc/apt/sources.list.d/google.list' && \
     wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | \
     sudo apt-key add - && \
     sudo apt-get update && \
-    sudo apt-get install -y google-chrome-stable libxss1
-
-# Install Chromedriver (compatable with Google Chrome version)
-#   See https://gerg.dev/2021/06/making-chromedriver-and-chrome-versions-match-in-a-docker-image/
-RUN BROWSER_MAJOR=$(google-chrome --version | sed 's/Google Chrome \([0-9]*\).*/\1/g') && \
+    sudo apt-get install -y google-chrome-stable libxss1 && \
+    BROWSER_MAJOR=$(google-chrome --version | sed 's/Google Chrome \([0-9]*\).*/\1/g') && \
     wget https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${BROWSER_MAJOR} -O chrome_version && \
     wget https://chromedriver.storage.googleapis.com/`cat chrome_version`/chromedriver_linux64.zip && \
     unzip chromedriver_linux64.zip && \
@@ -103,26 +102,23 @@ RUN BROWSER_MAJOR=$(google-chrome --version | sed 's/Google Chrome \([0-9]*\).*/
     echo "chromedriver version: $DRIVER_MAJOR" && \
     if [ $BROWSER_MAJOR != $DRIVER_MAJOR ]; then echo "VERSION MISMATCH"; exit 1; fi
 
-
 WORKDIR /rails-template
 USER student
 # Install graphviz (Rails ERD)
-RUN /bin/bash -l -c "sudo apt update && sudo apt install -y graphviz=2.42.2-3build2"
+RUN /bin/bash -l -c "sudo apt update && sudo apt install -y graphviz=2.42.2-3build2 && curl https://cli-assets.heroku.com/install.sh | sh && curl https://cli-assets.heroku.com/install.sh | sh && curl -L https://fly.io/install.sh | sh"
 
 # Install fuser (bin/server) and expect (web_git)
-RUN sudo apt install -y libpq-dev psmisc lsof expect
-
-# Install parity
-RUN wget -qO - https://apt.thoughtbot.com/thoughtbot.gpg.key | sudo apt-key add - \
+RUN sudo apt install -y libpq-dev psmisc lsof expect && \
+    wget -qO - https://apt.thoughtbot.com/thoughtbot.gpg.key | sudo apt-key add - \
     && echo "deb http://apt.thoughtbot.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/thoughtbot.list \
     && sudo apt-get update \
     && sudo apt-get -y install parity=3.5.0-2
 
 # Install heroku-cli
-RUN /bin/bash -l -c "curl https://cli-assets.heroku.com/install.sh | sh"
+# RUN /bin/bash -l -c "curl https://cli-assets.heroku.com/install.sh | sh"
 
 # Install flyyctl
-RUN /bin/bash -l -c "curl -L https://fly.io/install.sh | sh"
+# RUN /bin/bash -l -c "curl -L https://fly.io/install.sh | sh"
 RUN echo "export PATH=\"/home/student/.fly/bin:\$PATH\"" >> ~/.bashrc
 
 # Git global configuration
@@ -154,4 +150,4 @@ __git_complete g __git_main" >> ~/.bash_aliases
 
 # Alias bundle exec to be
 RUN echo "alias be='bundle exec'" >> ~/.bash_aliases
-RUN sudo cp -r /home/student /home/gitpod && sudo chmod 777 /home/gitpod
+# RUN sudo cp -r /home/student /home/gitpod && sudo chmod 777 /home/gitpod
